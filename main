@@ -1,0 +1,201 @@
+import { useState, useEffect } from 'react'
+import { Button } from "/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "/components/ui/select"
+import { Card, CardHeader, CardTitle, CardContent } from "/components/ui/card"
+import { Play, Pause, RefreshCw } from 'lucide-react'
+
+interface Recipe {
+  name: string
+  description: string
+  waterTemperature: string
+  filterType: string
+  coffeeAmount: string
+  waterAmount: string
+  steps: { instruction: string; duration: number }[]
+}
+
+const recipes: Recipe[] = [
+  {
+    name: "Classic V60",
+    description: "A balanced and clean pour-over coffee method.",
+    waterTemperature: "92°C - 96°C",
+    filterType: "V60 paper filter",
+    coffeeAmount: "20g",
+    waterAmount: "300g",
+    steps: [
+      { instruction: "Rinse the V60 paper filter with hot water to remove paper taste.", duration: 10 },
+      { instruction: "Add 20g of medium-coarse coffee grounds to the filter.", duration: 5 },
+      { instruction: "Pour 60g of water in a circular motion, ensuring all grounds are wet. Bloom for 30 seconds.", duration: 30 },
+      { instruction: "Slowly pour the remaining 240g of water in concentric circles, maintaining an even flow.", duration: 120 },
+    ],
+  },
+  {
+    name: "Aeropress",
+    description: "A quick and versatile brewing method for rich coffee.",
+    waterTemperature: "85°C - 90°C",
+    filterType: "Aeropress paper filter",
+    coffeeAmount: "15g",
+    waterAmount: "200g",
+    steps: [
+      { instruction: "Preheat the Aeropress by rinsing it with hot water.", duration: 10 },
+      { instruction: "Add 15g of fine coffee grounds to the Aeropress chamber.", duration: 5 },
+      { instruction: "Pour 200g of water over the grounds, ensuring even saturation. Stir for 10 seconds.", duration: 10 },
+      { instruction: "Attach the filter cap and press gently for 30 seconds until you hear a hissing sound.", duration: 30 },
+    ],
+  },
+  {
+    name: "Chemex",
+    description: "A smooth and aromatic brewing method using a Chemex brewer.",
+    waterTemperature: "90°C - 94°C",
+    filterType: "Chemex bonded filter",
+    coffeeAmount: "30g",
+    waterAmount: "500g",
+    steps: [
+      { instruction: "Rinse the Chemex bonded filter with hot water to remove paper taste.", duration: 10 },
+      { instruction: "Add 30g of medium-coarse coffee grounds to the filter.", duration: 5 },
+      { instruction: "Pour 100g of water in a circular motion, ensuring all grounds are wet. Bloom for 30 seconds.", duration: 30 },
+      { instruction: "Slowly pour the remaining 400g of water in concentric circles, maintaining an even flow.", duration: 180 },
+    ],
+  },
+  {
+    name: "Clever Brewer",
+    description: "A hybrid immersion and drip method for a full-bodied and clean cup.",
+    waterTemperature: "90°C - 93°C",
+    filterType: "Clever paper filter",
+    coffeeAmount: "25g",
+    waterAmount: "400g",
+    steps: [
+      { instruction: "Rinse the Clever paper filter with hot water to remove paper taste.", duration: 10 },
+      { instruction: "Add 25g of medium-coarse coffee grounds to the brewer.", duration: 5 },
+      { instruction: "Pour 100g of water in a circular motion, ensuring all grounds are wet. Bloom for 30 seconds.", duration: 30 },
+      { instruction: "Pour the remaining 300g of water, ensuring all grounds are submerged. Stir gently.", duration: 10 },
+      { instruction: "Place the lid on the brewer and let it steep for 2 minutes.", duration: 120 },
+      { instruction: "Place the Clever brewer on your cup to release the coffee. This should take about 30 seconds.", duration: 30 },
+    ],
+  },
+]
+
+export default function PourOverCoffeeApp() {
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null)
+  const [currentStep, setCurrentStep] = useState(0)
+  const [timeLeft, setTimeLeft] = useState(0)
+  const [isRunning, setIsRunning] = useState(false)
+
+  useEffect(() => {
+    if (selectedRecipe) {
+      setCurrentStep(0)
+      setTimeLeft(selectedRecipe.steps[0].duration)
+    }
+  }, [selectedRecipe])
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+
+    if (isRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => prev - 1)
+      }, 1000)
+    } else if (timeLeft === 0 && isRunning) {
+      if (currentStep < selectedRecipe!.steps.length - 1) {
+        setCurrentStep((prev) => prev + 1)
+        setTimeLeft(selectedRecipe!.steps[currentStep + 1].duration)
+      } else {
+        setIsRunning(false)
+      }
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isRunning, timeLeft, currentStep, selectedRecipe])
+
+  const handleRecipeSelect = (value: string) => {
+    const recipe = recipes.find((r) => r.name === value)
+    setSelectedRecipe(recipe || null)
+    setIsRunning(false)
+  }
+
+  const handleStartPause = () => {
+    setIsRunning((prev) => !prev)
+  }
+
+  const handleReset = () => {
+    if (selectedRecipe) {
+      setCurrentStep(0)
+      setTimeLeft(selectedRecipe.steps[0].duration)
+      setIsRunning(false)
+    }
+  }
+
+  return (
+    <Card className="w-full max-w-md mx-auto mt-8">
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold">Pour Over Coffee Recipes</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Select onValueChange={handleRecipeSelect}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a recipe" />
+          </SelectTrigger>
+          <SelectContent>
+            {recipes.map((recipe) => (
+              <SelectItem key={recipe.name} value={recipe.name}>
+                {recipe.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {selectedRecipe && (
+          <>
+            <div className="text-center">
+              <div className="text-4xl font-bold">{timeLeft}s</div>
+              <div className="text-sm text-gray-500">
+                Step {currentStep + 1} of {selectedRecipe.steps.length}
+              </div>
+            </div>
+
+            <div className="bg-gray-100 p-4 rounded-lg">
+              <p className="text-lg font-semibold">{selectedRecipe.steps[currentStep].instruction}</p>
+            </div>
+
+            <div className="flex justify-center space-x-2">
+              <Button onClick={handleStartPause} className="flex items-center">
+                {isRunning ? <Pause className="mr-2" /> : <Play className="mr-2" />}
+                {isRunning ? "Pause" : "Start"}
+              </Button>
+              <Button variant="outline" onClick={handleReset} className="flex items-center">
+                <RefreshCw className="mr-2" />
+                Reset
+              </Button>
+            </div>
+
+            <div className="mt-6">
+              <h3 className="text-xl font-semibold mb-2">Recipe Details</h3>
+              <div className="space-y-2">
+                <p><span className="font-medium">Description:</span> {selectedRecipe.description}</p>
+                <p><span className="font-medium">Water Temperature:</span> {selectedRecipe.waterTemperature}</p>
+                <p><span className="font-medium">Filter Type:</span> {selectedRecipe.filterType}</p>
+                <p><span className="font-medium">Coffee Amount:</span> {selectedRecipe.coffeeAmount}</p>
+                <p><span className="font-medium">Water Amount:</span> {selectedRecipe.waterAmount}</p>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <h3 className="text-xl font-semibold mb-2">Full Instructions</h3>
+              <ol className="list-decimal list-inside space-y-2">
+                {selectedRecipe.steps.map((step, index) => (
+                  <li key={index} className={index === currentStep ? "font-bold" : ""}>
+                    {step.instruction} ({step.duration}s)
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+Version 4 of 4
