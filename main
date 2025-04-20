@@ -4,7 +4,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "/
 import { Card, CardHeader, CardTitle, CardContent } from "/components/ui/card"
 import { Play, Pause, RefreshCw } from 'lucide-react'
 
-vercel
 
 interface Recipe {
   name: string
